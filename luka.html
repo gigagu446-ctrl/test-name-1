@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YouTube Hub TikTok</title>
+
+<style>
+body {
+  margin:0;
+  background:black;
+  color:white;
+  font-family:Arial;
+  overflow:hidden;
+}
+
+#upload {
+  position:fixed;
+  top:10px;
+  left:10px;
+  z-index:10;
+}
+
+.container {
+  height:100vh;
+  overflow-y:scroll;
+  scroll-snap-type:y mandatory;
+}
+
+.post {
+  height:100vh;
+  position:relative;
+  scroll-snap-align:start;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+}
+
+video, img {
+  max-height:100%;
+  max-width:100%;
+}
+
+.controls {
+  position:absolute;
+  right:10px;
+  bottom:80px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+button {
+  padding:10px;
+  border:none;
+  border-radius:50%;
+  cursor:pointer;
+}
+
+.text-btn {
+  position:absolute;
+  bottom:20px;
+  left:20px;
+  background:red;
+  padding:10px;
+  border-radius:10px;
+}
+</style>
+
+</head>
+<body>
+
+<div id="upload">
+  <input type="file" id="file" multiple accept="video/*,image/*">
+  <input type="file" id="music" accept="audio/*">
+</div>
+
+<div class="container" id="feed"></div>
+
+<script>
+let posts = JSON.parse(localStorage.getItem("posts") || "[]");
+let music = null;
+
+document.getElementById("file").onchange = (e)=>{
+  for(let file of e.target.files){
+    let url = URL.createObjectURL(file);
+
+    posts.push({
+      id: Date.now()+Math.random(),
+      type: file.type.startsWith("video") ? "video" : "image",
+      url,
+      likes:0,
+      reposts:0
+    });
+  }
+  save();
+  render();
+};
+
+document.getElementById("music").onchange = (e)=>{
+  let file = e.target.files[0];
+  if(file){
+    music = new Audio(URL.createObjectURL(file));
+    music.loop = true;
+  }
+};
+
+function save(){
+  localStorage.setItem("posts", JSON.stringify(posts));
+}
+
+function render(){
+  let feed = document.getElementById("feed");
+  feed.innerHTML = "";
+
+  posts.forEach(p=>{
+    let div = document.createElement("div");
+    div.className = "post";
+
+    let media;
+    if(p.type === "video"){
+      media = document.createElement("video");
+      media.src = p.url;
+      media.autoplay = true;
+      media.loop = true;
+      media.muted = true;
+    } else {
+      media = document.createElement("img");
+      media.src = p.url;
+    }
+
+    let controls = document.createElement("div");
+    controls.className = "controls";
+
+    controls.innerHTML = `
+      <button onclick="like('${p.id}')">❤️ ${p.likes}</button>
+      <button onclick="repost('${p.id}')">🔁 ${p.reposts}</button>
+      <button onclick="playMusic()">🎵</button>
+      <button onclick="stopMusic()">⏹</button>
+    `;
+
+    let textBtn = document.createElement("button");
+    textBtn.className = "text-btn";
+    textBtn.innerText = "დააჭირე";
+    textBtn.onclick = ()=> alert("იდიოტი ხარ");
+
+    div.appendChild(media);
+    div.appendChild(controls);
+    div.appendChild(textBtn);
+
+    feed.appendChild(div);
+  });
+}
+
+function like(id){
+  let p = posts.find(x=>x.id==id);
+  p.likes++;
+  save();
+  render();
+}
+
+function repost(id){
+  let p = posts.find(x=>x.id==id);
+  p.reposts++;
+  save();
+  render();
+}
+
+function playMusic(){
+  if(music) music.play();
+}
+
+function stopMusic(){
+  if(music) music.pause();
+}
+
+render();
+</script>
+
+</body>
+</html>
